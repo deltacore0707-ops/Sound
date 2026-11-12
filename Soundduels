@@ -1,0 +1,1354 @@
+-- deobf by discord.gg/speedhub
+print("deobf by discord.gg/speedhub")
+print("deobf by discord.gg/speedhub")
+print("deobf by discord.gg/speedhub")
+print("deobf by discord.gg/speedhub")
+print("deobf by discord.gg/speedhub")
+
+-- ============================================================
+-- SOUND INTRO GATE
+-- Main script starts only after the intro finishes or is skipped.
+-- ============================================================
+repeat task.wait() until game:IsLoaded()
+
+local _SoundIntroPlayers = game:GetService("Players")
+local _SoundIntroRunService = game:GetService("RunService")
+local _SoundIntroUIS = game:GetService("UserInputService")
+local _SoundIntroLighting = game:GetService("Lighting")
+local _SoundIntroSoundService = game:GetService("SoundService")
+local _SoundIntroTweenService = game:GetService("TweenService")
+local _SoundIntroPlayer = _SoundIntroPlayers.LocalPlayer
+
+local _SOUND_INTRO_MUSIC_URL = "https://files.catbox.moe/y4q5y3.mp3"
+local _SOUND_INTRO_MUSIC_FILE = "cleanhub_intro_song_14.mp3"
+local _SOUND_INTRO_MUSIC_VOLUME = 1
+local _SOUND_INTRO_FALLBACK_MUSIC_ID = "rbxassetid://9046862121"
+local _SOUND_INTRO_CHARACTER_ASSET_ID = "92554477662878"
+
+_G._SoundIntroFinished = false
+_G._VantaSkipIntro = false
+_G._VantaIntroActive = true
+
+local function _soundResolveIntroMusicId()
+    local assetGetter = getcustomasset or getsynasset
+    if type(assetGetter) == "function" and type(writefile) == "function" then
+        local exists = false
+        if type(isfile) == "function" then
+            pcall(function() exists = isfile(_SOUND_INTRO_MUSIC_FILE) end)
+        end
+        if not exists then
+            local ok, data = pcall(function() return game:HttpGet(_SOUND_INTRO_MUSIC_URL) end)
+            if ok and type(data) == "string" and #data > 0 then
+                pcall(writefile, _SOUND_INTRO_MUSIC_FILE, data)
+            end
+        end
+        local ok, asset = pcall(assetGetter, _SOUND_INTRO_MUSIC_FILE)
+        if ok and asset then return asset end
+    end
+    return _SOUND_INTRO_FALLBACK_MUSIC_ID
+end
+
+local function _soundShowIntro(onFinished)
+    local introSound
+    local function stopIntroMusic()
+        if introSound then
+            pcall(function() introSound:Stop() end)
+            pcall(function() introSound:Destroy() end)
+            introSound = nil
+        end
+    end
+
+    if _G._VantaLoadIntroCleanup then pcall(_G._VantaLoadIntroCleanup) end
+    local isMobile = _SoundIntroUIS.TouchEnabled and not _SoundIntroUIS.KeyboardEnabled
+    local playerGui = _SoundIntroPlayer:WaitForChild("PlayerGui")
+    local old = playerGui:FindFirstChild("VantaLoadIntro")
+    if old then old:Destroy() end
+    local oldBlur = _SoundIntroLighting:FindFirstChild("VantaLoadIntroBlur")
+    if oldBlur then oldBlur:Destroy() end
+
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "VantaLoadIntro"
+    screenGui.ResetOnSpawn = false
+    screenGui.DisplayOrder = 1000005
+    screenGui.IgnoreGuiInset = true
+    screenGui.Parent = playerGui
+
+    introSound = Instance.new("Sound")
+    introSound.Name = "VantaIntroMusic"
+    introSound.SoundId = _soundResolveIntroMusicId()
+    introSound.Volume = _SOUND_INTRO_MUSIC_VOLUME
+    introSound.Looped = false
+    introSound.Parent = _SoundIntroSoundService
+    pcall(function() introSound:Play() end)
+
+    local instance = Instance.new("Frame")
+    instance.BackgroundColor3 = Color3.fromRGB(5, 5, 8)
+    instance.BackgroundTransparency = 1
+    instance.BorderSizePixel = 0
+    instance.Size = UDim2.fromScale(1, 1)
+    instance.ZIndex = 1000
+    instance.Parent = screenGui
+
+    local rainContainer = Instance.new("Frame")
+    rainContainer.Name = "PurpleRain"
+    rainContainer.BackgroundTransparency = 1
+    rainContainer.Size = UDim2.fromScale(1, 1)
+    rainContainer.ZIndex = 1001
+    rainContainer.ClipsDescendants = true
+    rainContainer.Parent = instance
+
+    local running = true
+    local closing = false
+    task.spawn(function()
+        while running and not closing do
+            local drop = Instance.new("Frame")
+            drop.BackgroundColor3 = Color3.fromRGB(180, 100, 255)
+            drop.BackgroundTransparency = math.random(40, 70) / 100
+            drop.BorderSizePixel = 0
+            drop.Size = UDim2.fromOffset(math.random(1, 3), math.random(15, 30))
+            drop.Position = UDim2.fromScale(math.random(0, 100) / 100, -0.1)
+            drop.ZIndex = 1001
+            drop.Parent = rainContainer
+            local corner = Instance.new("UICorner")
+            corner.CornerRadius = UDim.new(1, 0)
+            corner.Parent = drop
+            local fallTime = math.random(15, 25) / 10
+            local tween = _SoundIntroTweenService:Create(drop, TweenInfo.new(fallTime, Enum.EasingStyle.Linear), {
+                Position = UDim2.fromScale(drop.Position.X.Scale, 1.1)
+            })
+            tween:Play()
+            task.delay(fallTime + 0.1, function()
+                if drop and drop.Parent then drop:Destroy() end
+            end)
+            task.wait(math.random(2, 6) / 100)
+        end
+    end)
+
+    local characterFrame = Instance.new("Frame")
+    characterFrame.Name = "CharacterContainer"
+    characterFrame.BackgroundTransparency = 1
+    characterFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    characterFrame.Position = UDim2.fromScale(0.5, 1.5)
+    characterFrame.Size = isMobile and UDim2.fromOffset(250, 250) or UDim2.fromOffset(450, 450)
+    characterFrame.ZIndex = 1005
+    characterFrame.Parent = instance
+
+    local characterImg = Instance.new("ImageLabel")
+    characterImg.BackgroundTransparency = 1
+    characterImg.Size = UDim2.fromScale(1, 1)
+    characterImg.Image = "rbxassetid://" .. _SOUND_INTRO_CHARACTER_ASSET_ID
+    characterImg.ScaleType = Enum.ScaleType.Fit
+    characterImg.ZIndex = 1006
+    characterImg.Parent = characterFrame
+
+    task.delay(0.2, function()
+        if not running then return end
+        _SoundIntroTweenService:Create(characterFrame, TweenInfo.new(1.2, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+            Position = UDim2.fromScale(0.5, 0.45)
+        }):Play()
+        task.spawn(function()
+            local direction = -1
+            while running and not closing do
+                _SoundIntroTweenService:Create(characterFrame, TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
+                    Position = UDim2.fromScale(0.5, 0.45 + direction * 0.015)
+                }):Play()
+                direction = -direction
+                task.wait(1.2)
+            end
+        end)
+    end)
+
+    local frame2 = Instance.new("Frame")
+    frame2.Name = "VantaWordmark"
+    frame2.BackgroundTransparency = 1
+    frame2.BorderSizePixel = 0
+    frame2.AnchorPoint = Vector2.new(0.5, 0.5)
+    frame2.Position = UDim2.fromScale(0.5, 0.43)
+    frame2.Size = isMobile and UDim2.fromOffset(240, 75) or UDim2.fromOffset(570, 160)
+    frame2.ClipsDescendants = false
+    frame2.ZIndex = 1003
+    frame2.Parent = instance
+    local uiScale = Instance.new("UIScale")
+    uiScale.Scale = 0.86
+    uiScale.Parent = frame2
+
+    local wordmarkSpecs = {
+        { id = 122032214221892, from = Vector2.new(-0.4, 0.2), final = Vector2.new(0.08, 0.5), rotation = -32, delay = 0.52 },
+        { id = 122800305096107, from = Vector2.new(0.3, -0.55), final = Vector2.new(0.245, 0.5), rotation = 20, delay = 0.62 },
+        { id = 88122827689967, from = Vector2.new(1.42, 0.3), final = Vector2.new(0.41, 0.5), rotation = -22, delay = 0.72 },
+        { id = 88857087413344, from = Vector2.new(0.68, 1.55), final = Vector2.new(0.575, 0.5), rotation = 27, delay = 0.82 },
+        { id = 110589136602702, from = Vector2.new(1.48, -0.42), final = Vector2.new(0.74, 0.5), rotation = 18, delay = 0.92 },
+        { id = 110589136602702, from = Vector2.new(-0.35, 1.35), final = Vector2.new(0.905, 0.5), rotation = -14, delay = 1.02 },
+    }
+    local wordmarkItems = {}
+    for i, spec in ipairs(wordmarkSpecs) do
+        local slot = Instance.new("Frame")
+        slot.BackgroundTransparency = 1
+        slot.BorderSizePixel = 0
+        slot.AnchorPoint = Vector2.new(0.5, 0.5)
+        slot.Position = UDim2.fromScale(spec.from.X, spec.from.Y)
+        slot.Size = UDim2.fromScale(0.10, 0.70)
+        slot.Rotation = spec.rotation
+        slot.ZIndex = 1003 + i
+        slot.Parent = frame2
+        local img = Instance.new("ImageLabel")
+        img.BackgroundTransparency = 1
+        img.BorderSizePixel = 0
+        img.Image = "rbxassetid://" .. tostring(spec.id)
+        img.ImageColor3 = Color3.fromRGB(255, 255, 255)
+        img.ImageTransparency = 1
+        img.ScaleType = Enum.ScaleType.Fit
+        img.AnchorPoint = Vector2.new(0.5, 0.5)
+        img.Position = UDim2.fromScale(0.5, 0.5)
+        img.Size = UDim2.fromScale(0.85, 0.85)
+        img.ZIndex = 1004 + i
+        img.Parent = slot
+        local imgCorner = Instance.new("UICorner")
+        imgCorner.CornerRadius = UDim.new(0, 6)
+        imgCorner.Parent = img
+        wordmarkItems[i] = { slot = slot, image = img, spec = spec }
+    end
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = "TAP ANYWHERE TO SKIP"
+    textLabel.TextColor3 = Color3.fromRGB(240, 240, 244)
+    textLabel.TextTransparency = 1
+    textLabel.TextSize = isMobile and 11 or 22
+    textLabel.Font = Enum.Font.GothamMedium
+    textLabel.AnchorPoint = Vector2.new(0.5, 0.5)
+    textLabel.Position = UDim2.new(0.5, 0, 0.85, 0)
+    textLabel.Size = UDim2.new(0.8, 0, 0, 24)
+    textLabel.ZIndex = 1010
+    textLabel.Parent = instance
+
+    local textLabel2 = Instance.new("TextLabel")
+    textLabel2.BackgroundTransparency = 1
+    textLabel2.Text = "Discord.gg/ghCMhKMbAk"
+    textLabel2.TextColor3 = Color3.fromRGB(166, 168, 178)
+    textLabel2.TextTransparency = 1
+    textLabel2.TextSize = isMobile and 10 or 16
+    textLabel2.Font = Enum.Font.GothamMedium
+    textLabel2.AnchorPoint = Vector2.new(0.5, 0.5)
+    textLabel2.Position = UDim2.new(0.5, 0, 0.88, 0)
+    textLabel2.Size = UDim2.new(0.8, 0, 0, 22)
+    textLabel2.ZIndex = 1010
+    textLabel2.Parent = instance
+
+    local skipBtn = Instance.new("TextButton")
+    skipBtn.Name = "SkipAnywhereButton"
+    skipBtn.BackgroundTransparency = 1
+    skipBtn.Text = ""
+    skipBtn.AutoButtonColor = false
+    skipBtn.Size = UDim2.fromScale(1, 1)
+    skipBtn.ZIndex = 1011
+    skipBtn.Parent = instance
+
+    local blurEffect = Instance.new("BlurEffect")
+    blurEffect.Name = "VantaLoadIntroBlur"
+    blurEffect.Size = 0
+    blurEffect.Parent = _SoundIntroLighting
+    local canSkip = true
+
+    local function smoothstep(a)
+        local n = math.clamp(a, 0, 1)
+        return n * n * (3 - 2 * n)
+    end
+    local function bezier(p0, p1, p2, t)
+        local n = 1 - t
+        return Vector2.new(n*n*p0.X + 2*n*t*p1.X + t*t*p2.X, n*n*p0.Y + 2*n*t*p1.Y + t*t*p2.Y)
+    end
+
+    local function closeIntro()
+        if closing then return end
+        closing = true
+        running = false
+        _G._VantaSkipIntro = true
+        stopIntroMusic()
+        local ti = TweenInfo.new(0.42, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        _SoundIntroTweenService:Create(instance, ti, { BackgroundTransparency = 1 }):Play()
+        _SoundIntroTweenService:Create(uiScale, ti, { Scale = 0.72 }):Play()
+        _SoundIntroTweenService:Create(characterFrame, ti, { Position = UDim2.fromScale(0.5, 1.5) }):Play()
+        _SoundIntroTweenService:Create(blurEffect, ti, { Size = 0 }):Play()
+        _SoundIntroTweenService:Create(textLabel, ti, { TextTransparency = 1 }):Play()
+        _SoundIntroTweenService:Create(textLabel2, ti, { TextTransparency = 1 }):Play()
+        for _, item in ipairs(wordmarkItems) do
+            _SoundIntroTweenService:Create(item.image, ti, { ImageTransparency = 1 }):Play()
+        end
+        task.delay(0.42, function()
+            if screenGui.Parent then screenGui:Destroy() end
+            if blurEffect.Parent then blurEffect:Destroy() end
+            _G._VantaLoadIntroCleanup = nil
+            _G._VantaIntroActive = false
+            if onFinished then onFinished() end
+        end)
+    end
+
+    _G._VantaLoadIntroCleanup = function()
+        running = false
+        closing = true
+        stopIntroMusic()
+        if screenGui.Parent then screenGui:Destroy() end
+        if blurEffect.Parent then blurEffect:Destroy() end
+        _G._VantaIntroActive = false
+        _G._SoundIntroFinished = true
+    end
+    skipBtn.Activated:Connect(closeIntro)
+
+    _SoundIntroTweenService:Create(instance, TweenInfo.new(0.25), { BackgroundTransparency = 0.5 }):Play()
+    _SoundIntroTweenService:Create(blurEffect, TweenInfo.new(0.25), { Size = 10 }):Play()
+    task.delay(1.5, function()
+        if not running then return end
+        _SoundIntroTweenService:Create(textLabel, TweenInfo.new(0.3), { TextTransparency = 0.22 }):Play()
+        _SoundIntroTweenService:Create(textLabel2, TweenInfo.new(0.3), { TextTransparency = 0.18 }):Play()
+    end)
+
+    task.spawn(function()
+        local now = os.clock()
+        while running and not closing do
+            local animTime = os.clock() - now - 0.5
+            if animTime > 0 then
+                local v = smoothstep((animTime - 0.38) / 0.9)
+                local s1 = math.sin(animTime * 1.62) * v
+                local s2 = math.sin(animTime * 3.24) * v
+                uiScale.Scale = 0.86 + smoothstep(animTime / 0.78) * 0.14 + s1 * 0.012
+                for i, item in ipairs(wordmarkItems) do
+                    local spec = item.spec
+                    local offset = i - 3
+                    local distance = math.abs(offset) / 2
+                    local progress = math.clamp((animTime - spec.delay) / 0.96, 0, 1)
+                    local eased = 1 - (1 - progress)^3
+                    local pos = bezier(spec.from, Vector2.new((spec.from.X + spec.final.X) * 0.5 - offset * 0.08, (spec.from.Y + spec.final.Y) * 0.5 + ((i % 2 == 0) and -0.23 or 0.23)), spec.final, eased)
+                    item.slot.Position = UDim2.fromScale(pos.X + offset * s1 * 0.009, pos.Y + (distance*distance*12 - 6) * s1 / 230 + s2 * (1 - distance) * 2.4 / 230)
+                    item.slot.Size = UDim2.fromScale(0.15 * (1 + s1 * (0.035 + distance*0.055)), 0.65 - s1 * (0.028 + distance*0.045))
+                    item.slot.Rotation = spec.rotation * (1 - eased) + offset * s1 * 5.8 + s2 * (1 - distance) * 0.8
+                    local a = math.sin(animTime * 2.85 + i * 0.82)
+                    local b = math.sin(animTime * 2.1 + i * 0.64)
+                    item.image.Position = UDim2.new(0.5, 0, 0.5, b * 1.35)
+                    item.image.Size = UDim2.fromScale(1 + a * 0.026, 1 - a * 0.038)
+                    item.image.Rotation = b * 0.9
+                    item.image.ImageTransparency = 1 - smoothstep((progress - 0.02) / 0.18)
+                end
+            end
+            _SoundIntroRunService.RenderStepped:Wait()
+        end
+    end)
+
+    task.delay(10, function()
+        if running and not closing then closeIntro() end
+    end)
+end
+
+_soundShowIntro(function()
+    _G._SoundIntroFinished = true
+    print("[Sound] Intro finished — loading main script...")
+end)
+
+repeat task.wait() until _G._SoundIntroFinished == true
+print("[Sound] Intro terminée. Starting main script.")
+-- ============================================================
+-- END SOUND INTRO GATE
+-- ============================================================
+
+if not LPH_OBFUSCATED then
+	LPH_NO_VIRTUALIZE = function(callback)
+	return callback
+	end
+	end
+
+	;LPH_NO_VIRTUALIZE(function()
+
+	do
+	local scriptEnv = _G
+	pcall(function()
+	if type(getfenv) == "function" then scriptEnv = getfenv(0) end
+	end)
+	local sharedEnv = scriptEnv
+	pcall(function()
+	if type(getgenv) == "function" then sharedEnv = getgenv() end
+	end)
+	if type(scriptEnv) ~= "table" then scriptEnv = _G end
+	if type(sharedEnv) ~= "table" then sharedEnv = scriptEnv end
+
+	local hiddenSetter = rawget(scriptEnv, "sethiddenproperty")
+	or rawget(sharedEnv, "sethiddenproperty")
+	or rawget(scriptEnv, "set_hidden_property")
+	or rawget(sharedEnv, "set_hidden_property")
+	or rawget(scriptEnv, "sethiddenprop")
+	or rawget(sharedEnv, "sethiddenprop")
+	local synApi = rawget(scriptEnv, "syn") or rawget(sharedEnv, "syn")
+	if type(hiddenSetter) ~= "function" and type(synApi) == "table" then
+	hiddenSetter = rawget(synApi, "sethiddenproperty") or rawget(synApi, "set_hidden_property")
+	end
+	if type(hiddenSetter) == "function" then
+	pcall(function() rawset(scriptEnv, "sethiddenproperty", hiddenSetter) end)
+	pcall(function() rawset(sharedEnv, "sethiddenproperty", hiddenSetter) end)
+	end
+
+	local fpsCapSetter = rawget(scriptEnv, "setfpscap")
+	or rawget(sharedEnv, "setfpscap")
+	or rawget(scriptEnv, "set_fps_cap")
+	or rawget(sharedEnv, "set_fps_cap")
+	or rawget(scriptEnv, "setfpslimit")
+	or rawget(sharedEnv, "setfpslimit")
+	if type(fpsCapSetter) ~= "function" and type(synApi) == "table" then
+	fpsCapSetter = rawget(synApi, "setfpscap") or rawget(synApi, "set_fps_cap")
+	end
+	if type(fpsCapSetter) == "function" then pcall(fpsCapSetter, 9999) end
+	end
+
+	local Players, UserInputService, TweenService, RunService, ReplicatedStorage,
+	Lighting, HttpService, Player, isMobile = (function()
+	local players = game:GetService("Players")
+	local input = game:GetService("UserInputService")
+
+	local mobile = input.TouchEnabled
+	pcall(function()
+	local platform = input:GetPlatform()
+	mobile = input.TouchEnabled and (
+	platform == Enum.Platform.Android
+	or platform == Enum.Platform.IOS
+	or not input.MouseEnabled
+	)
+	end)
+
+	return players,
+	input,
+	game:GetService("TweenService"),
+	game:GetService("RunService"),
+	game:GetService("ReplicatedStorage"),
+	game:GetService("Lighting"),
+	game:GetService("HttpService"),
+	players.LocalPlayer,
+	mobile
+	end)()
+
+	-- Same layout/sizes on mobile as on PC (only the menu panel keeps a mobile shape)
+	_G.__CrystalRealMobile = isMobile
+	isMobile = false
+
+	local executorName = "unknown"
+	do
+	local executorEnv = _G
+	pcall(function()
+	if type(getgenv) == "function" then executorEnv = getgenv() end
+	end)
+	if type(executorEnv) ~= "table" then executorEnv = _G end
+	local identify = rawget(executorEnv, "identifyexecutor")
+	or rawget(executorEnv, "getexecutorname")
+	or (type(_G) == "table" and (rawget(_G, "identifyexecutor") or rawget(_G, "getexecutorname")))
+	if type(identify) == "function" then
+	pcall(function()
+	local name = identify()
+	if name ~= nil then executorName = tostring(name) end
+	end)
+	end
+	end
+	local waveSafeMode = string.find(string.lower(executorName), "wave", 1, true) ~= nil
+	_G.__CrystalWaveSafeMode = waveSafeMode
+
+	do
+	local guiRootNames = {
+	"Eclipse_Panel", "EclipseHub", "CRYSTAL_Panel", "Sound_Panel", "DashEffectGui",
+	"CrystalAutoGrabBar", "SoundAutoGrabBar",
+	"CrystalLaggerGUI", "SoundLaggerGUI", "SoundAntiLosePanel", "AntiLoseUI", "K9RS", "hyejuSpeedBypass",
+	"CrystalMobileUI", "SoundMobileUI",
+	"CrystalEnemyWidget", "SoundEnemyWidget",
+	"SoundDuelsIntro",
+	}
+
+	pcall(function()
+	local oldLagger = _G.CrystalLagger
+	if oldLagger then
+	if oldLagger.Stop then
+	oldLagger.Stop()
+	else
+	if oldLagger.SetEnabled then oldLagger.SetEnabled(false) end
+	if oldLagger.SetLowEndEnabled then oldLagger.SetLowEndEnabled(false) end
+	end
+	end
+	end)
+	_G.CrystalLagger = nil
+	_G.__openLaggerGUI = nil
+	_G._SoundLaggerGUILoaded = nil
+	_G.__bypassFrame = nil
+	if _G.__CRYSTAL_STATE then
+	_G.__CRYSTAL_STATE.alive = false
+	pcall(function()
+	for _, stopper in ipairs(_G.__CRYSTAL_STATE.stoppers or {}) do pcall(stopper) end
+	for _, conn in ipairs(_G.__CRYSTAL_STATE.conns or {}) do pcall(function() conn:Disconnect() end) end
+	end)
+	end
+	_G.__CRYSTAL_STATE = nil
+	_G.__CrystalTrackConn = nil
+	_G.__CrystalTrackStopper = nil
+	_G.__SoundDuelsIntroPlayed = nil
+
+	pcall(function()
+	if _G.__speedBoostConn then _G.__speedBoostConn:Disconnect(); _G.__speedBoostConn = nil end
+	end)
+	pcall(function() if _G.__stopSpeedBoost then _G.__stopSpeedBoost() end end)
+
+	pcall(function()
+	game:GetService("NetworkClient"):SetOutgoingKBPSLimit(math.huge)
+	end)
+
+	pcall(function()
+	local coreGui = game:GetService("CoreGui")
+	for _, container in ipairs({ coreGui, Player.PlayerGui }) do
+	for _, name in ipairs(guiRootNames) do
+	while true do
+	local found = container:FindFirstChild(name)
+	if not found then break end
+	found:Destroy()
+	end
+	end
+	end
+	end)
+
+	pcall(function()
+	for _, plr in ipairs(Players:GetPlayers()) do
+	local ch = plr.Character
+	if ch then
+	for _, part in ipairs(ch:GetChildren()) do
+	for _, child in ipairs(part:GetChildren()) do
+	if child.Name == "GreenDuelsBB" or child.Name == "Green22sBB" or child.Name == "22sSpeedBill" or child.Name == "22sHubOverhead"
+	or child.Name == "CrystalSpeedBill" or child.Name == "SoundSpeedBill"
+	or child.Name == "CrystalHubOverhead" or child.Name == "SoundHubOverhead"
+	or child.Name == "CrystalTPBatMarkerBodyLock" or child.Name == "CrystalTPBatMarkerAttachment" then
+	child:Destroy()
+	end
+	end
+	end
+	end
+	end
+	end)
+
+	_G.__CRYSTAL_STATE = { conns = {}, stoppers = {}, alive = true }
+	_G.__CrystalTrackConn = function(conn)
+	if conn then table.insert(_G.__CRYSTAL_STATE.conns, conn) end
+	return conn
+	end
+	_G.__CrystalTrackStopper = function(fn)
+	if fn then table.insert(_G.__CRYSTAL_STATE.stoppers, fn) end
+	end
+	_G.__CrystalResetHooks = {}
+	_G.__CrystalOnNewInstance = function(fn)
+	if fn then table.insert(_G.__CrystalResetHooks, fn) end
+	end
+	end
+
+	local crystalRuntimeState = _G.__CRYSTAL_STATE
+
+	-- Shared Sound intro / menu / auto-steal artwork
+	local Sound_INTRO_IMAGE = "rbxassetid://100534832091396"
+	_G["_SoundHub_UI_ColorTheme"] = "purple"
+	_G.__CrystalSoundIntroImage = Sound_INTRO_IMAGE
+	_G.__SoundAccentColor = function()
+		local ct = "purple"
+		if _G.__CrystalHalloweenMode == true then return Color3.fromRGB(255, 126, 26) end
+		if ct == "azure" then return Color3.fromRGB(80, 170, 255) end
+		if ct == "green" then return Color3.fromRGB(70, 210, 110) end
+		return Color3.fromRGB(168, 85, 247)
+	end
+	_G.__CrystalAutoGrabV2ImageId = Sound_INTRO_IMAGE
+
+	-- Intro fully disabled: no slideshow, intro GUI, or intro music.
+	_G.__SoundIntroSongs = {}
+	_G.__SoundDuelsIntroPlayed = true
+	_G.__CrystalIntroSound = nil
+	_G.__CrystalIntroGui = nil
+	_G.__CrystalSkipIntro = function()
+		_G.__SoundDuelsIntroPlayed = true
+		if _G.__CrystalIntroSound then pcall(function() _G.__CrystalIntroSound:Stop(); _G.__CrystalIntroSound:Destroy() end) end
+		_G.__CrystalIntroSound = nil
+		if _G.__CrystalIntroGui then pcall(function() _G.__CrystalIntroGui:Destroy() end) end
+		_G.__CrystalIntroGui = nil
+	end
+
+	do
+	local traversalJobs = {}
+	local traversalConnection = nil
+	local function ensureTraversalRunner()
+	if traversalConnection then return end
+	traversalConnection = RunService.Heartbeat:Connect(function()
+	local deadline = os.clock() + 0.0008
+	local processedCount = 0
+	while traversalJobs[1] and processedCount < 140 and os.clock() < deadline do
+	local job = traversalJobs[1]
+	if job.cancelled or (job.continue and not job.continue()) then
+	table.remove(traversalJobs, 1)
+	else
+	local object = job.pending[#job.pending]
+	if not object then
+	table.remove(traversalJobs, 1)
+	else
+	job.pending[#job.pending] = nil
+	pcall(job.apply, object)
+	processedCount = processedCount + 1
+	local ok, children = pcall(function() return object:GetChildren() end)
+	if ok then
+	for _, child in ipairs(children) do job.pending[#job.pending + 1] = child end
+	end
+
+	if traversalJobs[2] then
+	table.remove(traversalJobs, 1)
+	traversalJobs[#traversalJobs + 1] = job
+	end
+	end
+	end
+	end
+	if not traversalJobs[1] then
+	traversalConnection:Disconnect()
+	traversalConnection = nil
+	end
+	end)
+	_G.__CrystalTrackConn(traversalConnection)
+	end
+	_G.__CrystalWalkDescendantsBatched = function(roots, apply, shouldContinue)
+	local job = { pending = {}, apply = apply, continue = shouldContinue, cancelled = false }
+	if typeof(roots) == "Instance" then roots = { roots } end
+	for _, root in ipairs(roots or {}) do
+	if root then
+	local ok, children = pcall(function() return root:GetChildren() end)
+	if ok then for _, child in ipairs(children) do job.pending[#job.pending + 1] = child end end
+	end
+	end
+	traversalJobs[#traversalJobs + 1] = job
+	ensureTraversalRunner()
+	return function() job.cancelled = true end
+	end
+	_G.__CrystalTrackStopper(function()
+	for _, job in ipairs(traversalJobs) do job.cancelled = true end
+	traversalJobs = {}
+	if traversalConnection then traversalConnection:Disconnect(); traversalConnection = nil end
+	end)
+	end
+	local CONFIG_FILE = "SoundHub_UI_Config.txt"
+
+	do
+
+	local antiDieEnabled = false
+	local antiDieStopped = false
+	_G.__CrystalAntiDieGuiEnabled = nil
+	local antiDieCharConns = {}
+	local antiDieCharAddedConn = nil
+
+	local function clearCharEntry(char, restore)
+	local entry = antiDieCharConns[char]
+	if entry then
+	if entry.healthConn then pcall(function() entry.healthConn:Disconnect() end) end
+	if entry.diedConn then pcall(function() entry.diedConn:Disconnect() end) end
+	if entry.cleanupConn then pcall(function() entry.cleanupConn:Disconnect() end) end
+	antiDieCharConns[char] = nil
+	end
+	if restore and char and char.Parent then
+	pcall(function()
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum then
+	hum.BreakJointsOnDeath = true
+	hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+	end
+	end)
+	end
+	end
+
+	local function applyAntiDieToCharacter(char)
+	if not char or not char.Parent then return end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+
+	clearCharEntry(char, false)
+
+	hum.BreakJointsOnDeath = false
+	hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+
+	local entry = { humanoid = hum }
+	entry.healthConn = hum:GetPropertyChangedSignal("Health"):Connect(function()
+	if antiDieEnabled and antiDieCharConns[char] == entry and hum.Health <= 0 then
+	hum.Health = hum.MaxHealth
+	end
+	end)
+
+	entry.diedConn = hum.Died:Connect(function()
+	task.defer(function()
+	if antiDieEnabled and antiDieCharConns[char] == entry and hum and hum.Parent then
+	hum.BreakJointsOnDeath = false
+	hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+	hum.Health = hum.MaxHealth
+	end
+	end)
+	end)
+
+	entry.cleanupConn = char.AncestryChanged:Connect(function()
+	if not char.Parent then
+	clearCharEntry(char, false)
+	end
+	end)
+
+	antiDieCharConns[char] = entry
+	end
+
+	local function setAntiDieEnabled(enabled)
+	enabled = enabled == true
+	if enabled == antiDieEnabled then return end
+	antiDieEnabled = enabled
+	if enabled then
+	if not antiDieCharAddedConn then
+	antiDieCharAddedConn = Player.CharacterAdded:Connect(function(char)
+	task.wait(0.2)
+	if antiDieEnabled and char and char.Parent then
+	applyAntiDieToCharacter(char)
+	end
+	end)
+	end
+	local char = Player.Character
+	if char and char.Parent and not antiDieCharConns[char] then
+	applyAntiDieToCharacter(char)
+	end
+	else
+	for char in pairs(antiDieCharConns) do
+	clearCharEntry(char, true)
+	end
+	end
+	end
+
+	local antiDieSources = { toggle = false, autobat = false }
+	local function refreshAntiDie()
+	if antiDieStopped then return end
+	local manual = antiDieSources.toggle
+	if _G.__CrystalAntiDieGuiEnabled then manual = _G.__CrystalAntiDieGuiEnabled() == true end
+	setAntiDieEnabled(manual or antiDieSources.autobat)
+	end
+
+	_G.__CrystalAntiDieSource = function(source, enabled)
+	if antiDieStopped or antiDieSources[source] == nil then return end
+	antiDieSources[source] = enabled == true
+	refreshAntiDie()
+	end
+
+	_G.__CrystalAntiDieSet = function(enabled)
+	_G.__CrystalAntiDieSource("autobat", enabled)
+	end
+
+	_G.__CrystalAntiDieIsEnabled = function() return antiDieEnabled end
+
+	_G.__CrystalTrackStopper(function()
+	antiDieStopped = true
+	antiDieSources.toggle = false
+	antiDieSources.autobat = false
+	setAntiDieEnabled(false)
+	end)
+	local antiDieCharAddedTracked = false
+	local _antiDieOrigSet = setAntiDieEnabled
+	setAntiDieEnabled = function(enabled)
+	_antiDieOrigSet(enabled)
+	if antiDieCharAddedConn and not antiDieCharAddedTracked then
+	antiDieCharAddedTracked = true
+	_G.__CrystalTrackConn(antiDieCharAddedConn)
+	end
+	end
+	local antiDieTickAcc = 0
+	_G.__CrystalTrackConn(RunService.Heartbeat:Connect(function(dt)
+	if antiDieStopped then return end
+	antiDieTickAcc = antiDieTickAcc + (dt or 0)
+	-- Refresh source flags infrequently; health recovery stays responsive when enabled.
+	if antiDieTickAcc >= 0.35 then
+	antiDieTickAcc = 0
+	refreshAntiDie()
+	end
+	if not antiDieEnabled then return end
+	local char = Player.Character
+	local hum = char and char.Parent and char:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+	local entry = antiDieCharConns[char]
+	if not entry or entry.humanoid ~= hum then applyAntiDieToCharacter(char) end
+	if hum.BreakJointsOnDeath then hum.BreakJointsOnDeath = false end
+	if hum:GetStateEnabled(Enum.HumanoidStateType.Dead) then
+	hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+	end
+	if hum.Health <= 0 then hum.Health = hum.MaxHealth end
+	end))
+	end
+
+	FeatureToggles = FeatureToggles or {}
+
+	local toggleStates = {}
+	local transientToggles = {
+	["Aimbot"] = true,
+	["Autoplay"] = true,
+	["Lagger"] = true,
+	}
+	local mobileFeatures = {
+	["Aimbot"] = true,
+	["Drop"] = true,
+	["TP Down"] = true,
+	["Autoplay"] = true,
+	["ESP Players"] = true,
+	["Player Tracers"] = true,
+	}
+	local mobileShortcutStates = {}
+	local mobileBtnPlaced = {}
+	for featName, _ in pairs(mobileFeatures) do
+	mobileShortcutStates[featName] = false
+	mobileBtnPlaced[featName] = true
+	end
+
+	if featureName == "Toggle UI" then
+	bindPill.Visible = true
+	bindPill.Position = UDim2.new(1, -48, 0.5, -10)
+	end
+	local speedValues = {
+	NormalBoost = 59,
+	NormalSteal = 29,
+	LaggerBoost = 40,
+	LaggerSteal = 20,
+	DesyncBoost = 59,
+	DesyncSteal = 29,
+	MobileButtonScale = 1.0,
+	FOV = 90,
+	StretchIntensity = 0.75,
+	CypherAimbotApproachSpeed = 57,
+	AutoTPDownHeight = 20,
+	InfJumpPower = 55,
+	}
+	local customSpeeds = {}
+	local autoStealValues = {
+	Radius      = 65,
+	Duration    = 1.33,
+	}
+	local autoStealMode = "v1"
+	local selectedMode = "Normal"
+	local violetteSkinMode = "1"
+	local batSkinMode = "Default"
+	local batAimbotMode = "BYPASS"
+	_G._AdaptBatMode = "BYPASS"
+	_G._AdaptBatVersion = math.clamp(math.floor(tonumber(_G._AdaptBatVersion) or 1), 1, 3)
+	if _G._AdaptBatMode ~= "NORMAL" then _G._AdaptBatVersion = 1 end
+	local batSkinModeLabels = { ["Default"] = "DEFAULT", ["Abyss Blue"] = "BLUE", ["Venom Green"] = "GREEN", ["Royal Gold"] = "GOLD", ["Velvet Rose"] = "ROSE", ["Crimson Night"] = "CRIMSON", ["RGB"] = "RGB" }
+	local selectedIntroMusicIndex = 1
+	local normalSpeed = 59
+	local carrySpeed = 29
+	local laggerSpeed = 40
+	local speedToggled = false
+	local normalCarryManualOverride, normalCarrySelected = false, false
+	local laggerCarryManualOverride, laggerCarrySelected = false, false
+	local toggleSpeedPair = nil
+	local carrySpeedMode = (_G._RaVeSpeedMethod == "V1") and "v1" or "v2"
+	_G._RaVeSpeedMethod = (_G._RaVeSpeedMethod == "V1") and "V1" or "V2"
+	-- Speed engine chosen by the user: V1 = original velocity logic, V2 = BodyForce logic
+	_G.__SoundSpeedEngine = "V1"
+	local laggerEnabled = false
+	local lastMoveDir = Vector3.new(0, 0, 0)
+	local MOVE_KEYS = {
+	[Enum.KeyCode.W] = true, [Enum.KeyCode.A] = true, [Enum.KeyCode.S] = true, [Enum.KeyCode.D] = true,
+	[Enum.KeyCode.Up] = true, [Enum.KeyCode.Left] = true, [Enum.KeyCode.Down] = true, [Enum.KeyCode.Right] = true,
+	}
+	local _prevSpeed = false
+	local FeatureKeybinds = {
+	SelectNormalMode = nil,
+	SelectLaggerMode = nil,
+	Drop = nil,
+	Autoplay = nil,
+	["Toggle UI"] = nil,
+	["Speed Boost"] = nil,
+	["Aimbot"] = nil,
+	["Carry Speed"] = nil,
+	["TP Bat"] = Enum.KeyCode.P,
+	["TP Down"] = nil,
+	["Auto Left"] = nil,
+	["Auto Right"] = nil,
+	["Insta Reset"] = nil,
+	FuckerToggle = nil,
+	}
+	local listeningBindBtn = nil
+	local listeningFeature = nil
+	local _allBindBtns = {}
+	local _featureToggleMap = {}
+	local toggleVisualUpdaters = {}
+	local toggleStateSetters = {}
+	local ragdollCounterPaused = false
+	local FeaturePostToggle = FeaturePostToggle or {}
+	local FPSLabel = nil
+	local PingLabel = nil
+	local StatsRightFps = nil
+	local StatsRightPing = nil
+	_G = _G or {}
+	_G.__CrystalDropMode = (_G.__CrystalDropMode == "Jump Drop") and "Jump Drop" or "Stand Drop"
+	_G["_SoundHub_UI_Data"] = _G["_SoundHub_UI_Data"] or {}
+	local mobileButtonPositions = {}
+	local quickButtonPositions = {}
+	_G.__CrystalButtonsSize = 1
+	_G.__CrystalGuiScale = 1.10
+	_G.__CrystalButtonsShape = _G.__CrystalButtonsShape or "Circle"
+	_G.__CrystalGuiPositionResetters = {}
+	_G.__CrystalResetButtonPositions = nil
+	_G.__CrystalGuiPositionsReset = false
+	_G.__CrystalRoundPanelBackground = function(image, panel)
+		local mask = Instance.new("CanvasGroup")
+		mask.Name = "RoundedBackgroundMask"
+		mask.Size = UDim2.fromScale(1, 1)
+		mask.Position = UDim2.fromOffset(0, 0)
+		mask.BackgroundTransparency = 1
+		mask.BorderSizePixel = 0
+		mask.GroupTransparency = 0
+		mask.ZIndex = image.ZIndex
+		mask.Parent = panel
+		local panelCorner = panel:FindFirstChildOfClass("UICorner")
+		local corner = Instance.new("UICorner", mask)
+		corner.CornerRadius = panelCorner and panelCorner.CornerRadius or UDim.new(0, 16)
+		local imageCorner = image:FindFirstChildOfClass("UICorner")
+		if imageCorner then imageCorner:Destroy() end
+		image.Parent = mask
+	end
+	_G.__CrystalFramePanelBackground = function(image, index, panel)
+		if not image then return end
+		image.ScaleType = Enum.ScaleType.Crop
+		local idx = tonumber(index) or 1
+		-- Red theme: shift image more to the right in the panel
+		if idx == 1 then
+			image.Size = UDim2.new(1.28, 0, 1, 0)
+			image.Position = UDim2.new(-0.22, 0, 0, 0)
+		else
+			image.Size = UDim2.fromScale(1, 1)
+			image.Position = UDim2.fromScale(0, 0)
+		end
+	end
+	_G.__CrystalApplyMainBgFrame = function(image, index)
+		pcall(_G.__CrystalFramePanelBackground, image, index, nil)
+	end
+
+	_G.__EclipseAddOriginalGui3Title = function(parent, panel)
+	if parent then parent.Text = string.upper(tostring(panel or "Sound")) end
+	end
+
+	local function clampOffsetsInsideViewport(scaleX, offsetX, scaleY, offsetY, width, height, sizeScale)
+	local camera = workspace.CurrentCamera
+	local vs = camera and camera.ViewportSize or Vector2.new(1920, 1080)
+	if vs.X <= 0 or vs.Y <= 0 then return offsetX, offsetY end
+	sizeScale = sizeScale or 1
+	width = width * sizeScale
+	height = height * sizeScale
+	local minX = -vs.X * scaleX
+	local maxX = vs.X * (1 - scaleX) - width
+	local minY = -vs.Y * scaleY
+	local maxY = vs.Y * (1 - scaleY) - height
+	if maxX < minX then maxX = minX end
+	if maxY < minY then maxY = minY end
+	return math.clamp(offsetX, minX, maxX), math.clamp(offsetY, minY, maxY)
+	end
+
+	local function placeInsideViewport(gui, scaleX, offsetX, scaleY, offsetY, sizeScale)
+	local width = gui.Size.X.Offset
+	local height = gui.Size.Y.Offset
+	local x, y = clampOffsetsInsideViewport(scaleX, offsetX, scaleY, offsetY, width, height, sizeScale)
+	gui.Position = UDim2.new(scaleX, x, scaleY, y)
+	return x, y
+	end
+
+	local isScrollDragging = false
+
+	local function attachCleanHubTap(btn, onTap)
+	return false
+	end
+
+	local cleanTapStates = setmetatable({}, { __mode = "k" })
+	_G.__CrystalTrackConn(UserInputService.InputChanged:Connect((function(inp)
+	local states = cleanTapStates[inp]
+	if not states then return end
+	if inp.UserInputType ~= Enum.UserInputType.Touch and inp.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+	for _, state in ipairs(states) do
+	if (inp.Position - state.tapStart).Magnitude > 12 then state.tapMoved = true end
+	end
+	end)))
+	_G.__CrystalTrackConn(UserInputService.InputEnded:Connect(function(inp)
+	local states = cleanTapStates[inp]
+	if not states then return end
+	cleanTapStates[inp] = nil
+	for _, state in ipairs(states) do
+	if not state.tapMoved and not isScrollDragging then
+	local scrollMoved = state.scroll and state.scrollCanvasAtStart
+	and math.abs(state.scroll.CanvasPosition.Y - state.scrollCanvasAtStart) > 5
+	if not scrollMoved then state.callback() end
+	end
+	end
+	end))
+
+	local function connectBtn(btn, callback)
+	if attachCleanHubTap(btn, callback) then return end
+	btn.InputBegan:Connect(function(inp)
+	if inp.UserInputType ~= Enum.UserInputType.Touch and inp.UserInputType ~= Enum.UserInputType.MouseButton1 then return end
+	local activeScroll = Scroll
+	local states = cleanTapStates[inp]
+	if not states then states = {}; cleanTapStates[inp] = states end
+	table.insert(states, {
+	tapStart = inp.Position,
+	tapMoved = false,
+	scroll = activeScroll,
+	scrollCanvasAtStart = activeScroll and activeScroll.CanvasPosition.Y or nil,
+	callback = callback,
+	})
+	end)
+	end
+
+	local darkPalette = {
+	["245,250,255"] = Color3.fromRGB(25, 31, 42),
+	["235,245,255"] = Color3.fromRGB(31, 49, 70),
+	["210,230,250"] = Color3.fromRGB(35, 57, 82),
+	["190,220,250"] = Color3.fromRGB(55, 105, 160),
+	["140,190,240"] = Color3.fromRGB(60, 135, 205),
+	["80,160,255"] = Color3.fromRGB(38, 112, 205),
+	["50,110,190"] = Color3.fromRGB(160, 205, 255),
+	["80,130,200"] = Color3.fromRGB(165, 210, 255),
+	["40,80,150"] = Color3.fromRGB(150, 200, 255),
+	["30,90,200"] = Color3.fromRGB(130, 190, 255),
+	["60,120,200"] = Color3.fromRGB(150, 205, 255),
+	["100,140,200"] = Color3.fromRGB(165, 210, 255),
+	}
+	local GUI_WATCH_PROPERTIES = {"BackgroundColor3", "BorderColor3"}
+	local TEXT_COLOR_PROPERTIES = {"BackgroundColor3", "TextColor3", "BorderColor3"}
+	local TEXT_WATCH_PROPERTIES = {"TextColor3", "TextStrokeColor3", "TextStrokeTransparency"}
+	local applyDarkPaletteTo
+	local buttonThemeStates = setmetatable({}, {__mode = "k"})
+	local function applyButtonTheme(instance)
+	local owner = instance
+	while owner and not owner:IsA("GuiButton") and not owner:GetAttribute("CrystalButtonThemeControl") do
+	owner = owner.Parent
+	end
+	if not owner then return end
+	local property = instance:IsA("UIStroke") and "Color"
+		or instance:IsA("UIGradient") and "Color"
+		or instance:IsA("GuiObject") and "BackgroundColor3"
+	if not property then return end
+	local state = buttonThemeStates[instance]
+	if not state then
+	state = {}
+	buttonThemeStates[instance] = state
+	_G.__CrystalTrackConn(instance:GetPropertyChangedSignal(property):Connect(function()
+	applyButtonTheme(instance)
+	end))
+	end
+	if state.busy then return end
+	local current = instance[property]
+	if current == state.applied and state.theme == _G.__CrystalGuiTheme then return end
+	if current ~= state.applied then state.original = current end
+	local theme = _G.__CrystalGuiTheme
+	local function tint(color)
+	if theme ~= "GUI 2" and theme ~= "GUI 3" then return color end
+	local brightness = math.max(color.R, color.G, color.B)
+
+	local dark = theme == "GUI 2" and Color3.fromRGB(12, 24, 42) or Color3.fromRGB(43, 13, 17)
+	local bright = theme == "GUI 2" and Color3.fromRGB(100, 175, 255) or Color3.fromRGB(246, 65, 77)
+	return dark:Lerp(bright, brightness)
+	end
+	local result = state.original
+	if instance:IsA("UIGradient") then
+	if theme == "GUI 2" or theme == "GUI 3" then
+	local points = {}
+	for _, point in ipairs(result.Keypoints) do
+	table.insert(points, ColorSequenceKeypoint.new(point.Time, tint(point.Value)))
+	end
+	result = ColorSequence.new(points)
+	end
+	else
+	result = tint(result)
+	end
+	state.applied = result
+	state.theme = theme
+	if current ~= result then
+	state.busy = true
+	instance[property] = result
+	state.busy = false
+	end
+	end
+	applyDarkPaletteTo = (function(instance)
+	if not instance then return end
+	local colorProperties = nil
+	if instance:IsA("TextLabel") or instance:IsA("TextButton") or instance:IsA("TextBox") then
+	colorProperties = TEXT_COLOR_PROPERTIES
+	elseif instance:IsA("GuiObject") then
+	colorProperties = GUI_WATCH_PROPERTIES
+	end
+	if colorProperties then
+	for _, property in ipairs(colorProperties) do
+	local color = instance[property]
+	local key = string.format("%d,%d,%d", math.floor(color.R * 255 + 0.5), math.floor(color.G * 255 + 0.5), math.floor(color.B * 255 + 0.5))
+	if darkPalette[key] then instance[property] = darkPalette[key] end
+	end
+	end
+	if instance:IsA("UIStroke") then
+	local color = instance.Color
+	local key = string.format("%d,%d,%d", math.floor(color.R * 255 + 0.5), math.floor(color.G * 255 + 0.5), math.floor(color.B * 255 + 0.5))
+	if color.B > color.R + 12 and color.B >= color.G then instance.Color = Color3.fromRGB(0, 0, 0)
+	elseif darkPalette[key] then instance.Color = darkPalette[key] end
+	end
+
+	if not _G.__CrystalModernGuiActive and not instance:GetAttribute("CrystalDarkPaletteWatched") then
+	instance:SetAttribute("CrystalDarkPaletteWatched", true)
+	local function watchProperty(property)
+	_G.__CrystalTrackConn(instance:GetPropertyChangedSignal(property):Connect(function()
+	applyDarkPaletteTo(instance)
+	end))
+	end
+	if instance:IsA("UIStroke") then
+	watchProperty("Color")
+	elseif instance:IsA("GuiObject") then
+	for _, property in ipairs(GUI_WATCH_PROPERTIES) do watchProperty(property) end
+	if instance:IsA("TextLabel") or instance:IsA("TextButton") or instance:IsA("TextBox") then
+	for _, property in ipairs(TEXT_WATCH_PROPERTIES) do watchProperty(property) end
+	end
+	end
+	end
+	applyButtonTheme(instance)
+	end)
+
+	_G.__CrystalThemeRoots = {}
+	local themeWalkCancels = setmetatable({}, { __mode = "k" })
+	_G.__CrystalRegisterThemeRoot = (function(root)
+	if not root then return end
+	for _, savedRoot in ipairs(_G.__CrystalThemeRoots) do
+	if savedRoot == root then return end
+	end
+	table.insert(_G.__CrystalThemeRoots, root)
+	applyDarkPaletteTo(root)
+	if themeWalkCancels[root] then themeWalkCancels[root]() end
+	themeWalkCancels[root] = _G.__CrystalWalkDescendantsBatched(root, applyDarkPaletteTo, function()
+	return root.Parent ~= nil
+	end)
+	_G.__CrystalTrackConn(root.DescendantAdded:Connect(applyDarkPaletteTo))
+	end)
+	_G.__CrystalApplyTheme = (function()
+	for _, root in ipairs(_G.__CrystalThemeRoots) do
+	if root and root.Parent then
+	applyDarkPaletteTo(root)
+	if themeWalkCancels[root] then themeWalkCancels[root]() end
+	themeWalkCancels[root] = _G.__CrystalWalkDescendantsBatched(root, applyDarkPaletteTo, function()
+	return root.Parent ~= nil
+	end)
+	end
+	end
+	end)
+
+_G.__CrystalAddUnifiedPanelShade = function(parent, cornerRadius, zIndex)
+	if not parent then return nil end
+	for _, oldName in ipairs({"UnifiedBackgroundShade", "UnifiedPanelWhiteOutline", "UnifiedPanelWhiteGlow", "UnifiedPanelAccentOutline"}) do
+		local old = parent:FindFirstChild(oldName)
+		if old then old:Destroy() end
+	end
+	local shade = Instance.new("Frame")
+	shade.Name = "UnifiedBackgroundShade"
+	shade.Size = UDim2.fromScale(1, 1)
+	shade.Position = UDim2.fromScale(0, 0)
+	shade.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+	shade.BackgroundTransparency = 0.68
+	shade.BorderSizePixel = 0
+	shade.Active = false
+	shade.ZIndex = zIndex or 1
+	shade.Parent = parent
+	Instance.new("UICorner", shade).CornerRadius = UDim.new(0, cornerRadius or 16)
+	local shadeGradient = Instance.new("UIGradient", shade)
+	shadeGradient.Rotation = 90
+	shadeGradient.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.28),
+		NumberSequenceKeypoint.new(0.55, 0.42),
+		NumberSequenceKeypoint.new(1, 0.56),
+	})
+
+	-- Match AmbitiousTest's crisp purple outline (no white edge or glow).
+	local outline = Instance.new("UIStroke")
+	outline.Name = "UnifiedPanelAccentOutline"
+	outline.Color = Color3.fromRGB(126, 71, 190)
+	outline.Thickness = 1.4
+	outline.Transparency = 0.32
+	outline.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	outline.LineJoinMode = Enum.LineJoinMode.Round
+	outline.Parent = parent
+	return shade
+end
+
+
+	local gamepadInputTypes = {
+	[Enum.UserInputType.Gamepad1] = true,
+	[Enum.UserInputType.Gamepad2] = true,
+	[Enum.UserInputType.Gamepad3] = true,
+	[Enum.UserInputType.Gamepad4] = true,
+	[Enum.UserInputType.Gamepad5] = true,
+	[Enum.UserInputType.Gamepad6] = true,
+	[Enum.UserInputType.Gamepad7] = true,
+	[Enum.UserInputType.Gamepad8] = true,
+	}
+
+	local function isBindableInput(input)
+	return input
+	and input.KeyCode
+	and input.KeyCode ~= Enum.KeyCode.Unknown
+	and (input.UserInputType == Enum.UserInputType.Keyboard or gamepadInputTypes[input.UserInputType])
+	end
+
+	local function isClearKeybindInput(input)
+	return input
+	and input.UserInputType == Enum.UserInputType.Keyboard
+	and input.KeyCode == Enum.KeyCode.RightControl
+	end
+
+	local mouseButtonMap = {}
+	local mouseButtonDisplay = {
+	["MB3"] = "Mouse3",
+	}
+	pcall(function() mouseButtonMap[Enum.UserInputType.MouseButton3] = "MB3" end)
+	local function isMouseSideButton(input)
+	return input and mouseButtonMap[input.UserInputType] ~= nil
+	end
+	local function getMouseButtonBind(input)
+	return mouseButtonMap[input.UserInputType]
+	end
+
+	local function keybindDisplayName(key)
+	if not key then return "-" end
+	if type(key) == "string" then return mouseButtonDisplay[key] or key end
+	return tostring(key):match("KeyCode%.(.+)") or tostring(key)
+	end
+
+	local VIOLETTE_SKIN_SETS = {
+	["1"] = {
+		displayName = "PURPLE", hats = "1744060292,439945661,1125510,1029025", hair = "",
+		headless = true, korblox = "Right",
+		accessories = {1744060292, 439945661, 1125510, 1029025, 11748356, 8465506143, 11444217173},
+		clothing = {7424637509, 7689651773},
+	},
+	["2"] = {
+		displayName = "BLUE", hats = "74891470",
+		hair = "16630147,6346833550,6594911228,6594919952,6823338112,7097747842",
+		headless = true, korblox = "Right",
+		accessories = {74891470, 16630147, 6346833550, 6594911228, 6594919952, 6823338112, 7097747842},
+		clothing = {18423061209, 18423154566},
+	},
+	["3"] = {
+		displayName = "RED", hats = "215718515,439945661", hair = "7183785281",
+		headless = true, korblox = "Right",
+		accessories = {215718515, 439945661, 7183785281},
+		clothing = {15998365201, 7689651773},
+	},
+	["4"] = {
+		displayName = "BLACK", hats = "10159600649,439946249,17798262442,92482095662016",
+		hair = "139101716417676", headless = true, korblox = "Right",
+		accessories = {10159600649, 439946249, 17798262442, 92482095662016, 139101716417676, 12490213797},
+		clothing = {18766106994, 13925390578},
+	},
+	["5"] = {
+		displayName = "GREEN", hats = "553970961,1744060292", hair = "93268856876777",
+		headless = true, korblox = "Right",
+		accessories = {553970961, 1744060292, 93268856876777},
+		clothing = {9478068776, 6348682339},
+	},
+	["6"] = {
+		displayName = "WHITE",
+		hats = "74891470,215718515,439945661,1016143686,1744060292,10159600649,89012651581593,88365652378427",
+		hair = "126447390530523", headless = true, korblox = "Right",
+		accessories = {74891470, 215718515, 439945661, 1016143686, 1744060292, 10159600649, 89012651581593, 126447390530523},
+		clothing = {88032876921227, 108259950755140},
+	},
+	-- Skins ported from Rival Hub.
+	["7"] = {
+		displayName = "ALIEN",
+		headless = true,
+		accessories = {115566893133129, 103980259507115, 109790632200416, 112532740065682, 120301257476322, 10997283529, 125085889448130},
+	},
+	-- Outfit packs imported from the VX7 script.
+
+	["8"] = {
+		displayName = "OUTFIT",
+		accessories = {115566893133129, 103980259507115, 109790632200416, 112532740065682, 120301257476322, 125157548394108, 123231522991173, 74827642361405},
+	},
+	["9"] = {
+		displayName = "OUTFIT 2",
+		face = 86109936998865,
+		scales = {HeightScale = 1, WidthScale = 0.85, DepthScale = 0.88, HeadScale = 0.95, BodyTypeScale = 1, ProportionScale = 0.85},
+		accessories = {115566893133129, 103980259507115, 109790632200416, 112532740065682, 120301257476322, 136644276218918, 132022106987543, 131740907052260},
+	},
+	["10"] = {
+		displayName = "OUTFIT 3",
+		headless = true,
+		accessories = {115566893133129, 103980259507115, 109790632200416, 112532740065682, 120301257476322, 119331031817124, 84952305140948},
+	},
+	["11"] = {
+		displayName = "OUTFIT 4",
+		headless = true,
+		accessories = {115566893133129, 103980259507115, 109790632200416, 112532740065682, 120301257476322, 18902416696, 17739456422, 116750288839357, 12842417046, 122223069519702},
+	},
+	["12"] = {
+		displayName = "OUTFIT 5",
+		accessories = {13935333090, 16110951997, 10632503818},
+	},
+	["13"] = {
+		displayName = "OUTFIT 6",
+		headless = true,
+		accessories = {74891470, 4390891467, 91274263831244, 128424248603010, 91151766440767, 17044638424},
+	},
+	["14"] = {
+		displayName = "RIVAL",
+		headless = true,
+		korblox = "Right",
+		accessories = {76479271580913, 1402432199, 140627490971265, 128912609563885, 17449551560, 5796531729, 139607718},
+	},
+	["15"] = {
+		displayName = "NEW SKIN",
+		headless = true,
+		korblox = "Right",
+		accessories = {70414871864071, 14863917259, 133498027006138, 82277826177074},
+	},
+	["16"] = {
+		displayName = "OUTFIT 1",
+		korblox = "Right",
+		accessories = {10159600649},
+		clothing = {9683332638, 93182020184041},
+	},
+	["17"] = {
+		displayName = "OUTFIT 2 CLASSIC",
+		korblox = "Right",
+		accessories = {1744060292},
+		clothing = {9683332638, 93182020184041},
+	},
+
+
+}
+local function getVioletteSkinSet(mode)
+	return VIOLETTE_SKIN_SETS[tostring(mode or "1")]
+end
+local function refreshVioletteSkinCatalog()
+	local activeSets = {}
+	local order = {}
+	for key, skin in pairs(VIOLETTE_SKIN_SETS) do
+		activeSets[key] = skin
+		table.insert(order, key)
+	end
+	table.sort(order, function(a, b)
+		return (tonumber(a) or math.huge) < (tonumber(b) or math.huge)
+	end)
+	_G._KawatanSkinSets = activeSets
+	_G._KawatanSkinSetOrder = order
+	return activeSets
+end
+refreshVioletteSkinCatalog()
+_G.__CrystalHalloweenVioletteSkinSets = {}
+_G._KawatanSkinColor = _G._KawatanSkinColor or "1"
+	do
+		local assetProperties = {
+			[11] = "Shirt", [12] = "Pants", [2] = "GraphicTShirt",
+			[8] = "HatAccessory", [41] = "HairAccessory", [42] = "FaceAccessory",
+			[43] = "NeckAccessory", [44] = "ShouldersAccessory", [45] = "FrontAccessory",
+			[46] = "BackAccessory", [47] = "WaistAccessory", [64] = "TShirtAccessory",
+			[65] = "ShirtAccessory", [66] = "PantsAccessory", [67] = "JacketAccessory",
+			[68] = "SweaterAccessory", [69] = "ShortsAccessory", [70] = "LeftShoeAccessory",
+			[71] = "RightShoeAccessory", [72] = "DressSkirtAccessory",
+		}
+		local function addPreviewAsset(description, assetId)
+			local ok, info = pcall(function()
+				return game:GetService("MarketplaceService"):GetProductInfo(assetId, Enum.InfoType.Asset)
+			end)
+			if not ok or not info then return end
+			local property = assetProperties[tonumber(info.AssetTypeId)]
+			if not property then return end
+			if property == "Shirt" or property == "Pants" or property == "GraphicTShirt" then
+				pcall(function() desc
+... (804 KB left)
